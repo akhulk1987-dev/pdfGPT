@@ -42,12 +42,14 @@ src/app/api/upload/route.ts   - File upload and parsing API
 src/lib/models.ts             - LLM model registry
 src/lib/document-processor.ts - Multi-format file parsing
 src/lib/search.ts             - TF-IDF document search
-legacy/                       - Previous Python/Gradio codebase
+docs/API.md                   - Upload/chat route contracts and model IDs
+docs/ARCHITECTURE.md          - Runtime flow, setup, troubleshooting, extension points
 ```
 
 ### Deployment
 
-Deploys to Vercel via `vercel deploy` or GitHub integration. No special config needed.
+Deploys to Vercel via `vercel deploy` or GitHub integration. Set provider API
+keys in the Vercel dashboard before using hosted models.
 
 ### Key Notes
 
@@ -55,3 +57,4 @@ Deploys to Vercel via `vercel deploy` or GitHub integration. No special config n
 - Document chunks are stored in client state (React) and sent with each chat request.
 - TF-IDF search runs server-side in the API route; no vector DB or embedding API needed.
 - The `pdf-parse` package requires `serverExternalPackages` in next.config.ts.
+- `Dockerfile`, `docker-compose.yaml`, and `requirements.txt` are legacy Python/Gradio artifacts, not the supported Next.js run path.
