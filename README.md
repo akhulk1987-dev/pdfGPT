@@ -59,6 +59,11 @@ Next.js 15 (App Router)
   +-- Client        -> React UI, stores document chunks in state
 ```
 
+## Developer Docs
+
+- [API contracts](docs/API.md) - request/response shapes for upload and chat, model IDs, streaming behavior, and parser constraints.
+- [Architecture and runbook](docs/ARCHITECTURE.md) - document-processing flow, retrieval behavior, extension points, and troubleshooting.
+
 ## License
 
 MIT License. See [LICENSE.txt](LICENSE.txt).
