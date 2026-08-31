@@ -31,7 +31,8 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000), upload a document, choose a
 model and mode, then ask a question. The sidebar API key field can override the
-server environment key for a single request.
+server environment key for a single request. The UI defaults to
+`openai:gpt-4o-mini` when that model is present in the registry.
 
 ### Scripts
 
@@ -48,16 +49,17 @@ The selected model determines which key is required. Keys can be set in
 `.env.local`, in Vercel project settings, or supplied from the UI for an
 individual chat request.
 
-| Provider | Model ID prefix | Environment variable |
+| Provider | Current model IDs | Environment variable |
 | --- | --- | --- |
-| Google | `google:` | `GOOGLE_GENERATIVE_AI_API_KEY` |
-| Groq | `groq:` | `GROQ_API_KEY` |
-| OpenAI | `openai:` | `OPENAI_API_KEY` |
-| Anthropic | `anthropic:` | `ANTHROPIC_API_KEY` |
+| Google | `google:gemini-2.0-flash`, `google:gemini-1.5-flash` | `GOOGLE_GENERATIVE_AI_API_KEY` |
+| Groq | `groq:llama-3.1-8b-instant`, `groq:llama-3.3-70b-versatile`, `groq:mixtral-8x7b-32768` | `GROQ_API_KEY` |
+| OpenAI | `openai:gpt-4o`, `openai:gpt-4o-mini` | `OPENAI_API_KEY` |
+| Anthropic | `anthropic:claude-sonnet-4-20250514`, `anthropic:claude-3-5-haiku-20241022` | `ANTHROPIC_API_KEY` |
 
 Model options live in `src/lib/models.ts`. When adding a new model, add it to
 `MODEL_LIST`; when adding a new provider prefix, also update `getProvider()` in
-`src/app/api/chat/route.ts`.
+`src/app/api/chat/route.ts`. Groq uses the OpenAI-compatible provider client
+with `https://api.groq.com/openai/v1`.
 
 ## Architecture
 
@@ -91,6 +93,17 @@ src/app/api/chat/route.ts
    as `[Page N] chunk text`.
 5. The route chooses the prompt template from `mode` (`rag` or `agentic`) and
    streams the LLM response with `streamText().toDataStreamResponse()`.
+
+Operational constraints:
+
+- There is no server-side document store. Refreshing the page or clearing the
+  selected document removes the chunks from the active session.
+- Uploaded chunks are included in every chat payload, so very large documents
+  can create large request bodies.
+- A sidebar API key is sent in the `/api/chat` JSON body for that request. In
+  shared deployments, prefer server-side environment variables when possible.
+- The client distinguishes JSON errors from streams by `content-type` and then
+  parses Vercel AI SDK data-stream text lines that start with `0:`.
 
 ## API contracts
 
@@ -175,6 +188,16 @@ interface ParsedDocument {
   convert the presentation to PDF first.
 - TXT and Markdown files are read as UTF-8 text and treated as one page.
 
+## Search behavior
+
+- Retrieval is lexical TF-IDF, not semantic embedding search.
+- Tokens are lowercased, non-alphanumeric characters are stripped, and tokens
+  shorter than three characters are ignored.
+- Chat requests retrieve the top 8 chunks, even though `searchChunks()` defaults
+  to 5 when called without an explicit `topK`.
+- If every similarity score is zero, search falls back to the first chunks with
+  small synthetic scores so the chat route can still build context.
+
 ## Troubleshooting
 
 - **"Upload a document first"**: the client has no chunks in state. Upload a
@@ -186,6 +209,9 @@ interface ParsedDocument {
 - **No relevant content found**: the search route received chunks but could not
   build usable context. Try a more specific question or confirm parsing returned
   non-empty chunks.
+- **Unexpected answers for synonyms or paraphrases**: retrieval is lexical
+  TF-IDF, so questions that share exact vocabulary with the document usually
+  retrieve better context.
 - **PPT/PPTX extraction is weak**: convert presentations to PDF for more
   reliable page text and citations.
 
