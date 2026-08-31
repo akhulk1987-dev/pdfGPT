@@ -42,7 +42,7 @@ src/app/api/upload/route.ts   - File upload and parsing API
 src/lib/models.ts             - LLM model registry
 src/lib/document-processor.ts - Multi-format file parsing
 src/lib/search.ts             - TF-IDF document search
-legacy/                       - Previous Python/Gradio codebase
+Dockerfile, docker-compose.yaml, requirements.txt - Historical Python/Gradio artifacts, not the primary Next.js run path
 ```
 
 ### Deployment
